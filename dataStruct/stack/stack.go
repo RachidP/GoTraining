@@ -1,135 +1,99 @@
+// LIFO and FIFO in Golang
 package main
 
 import (
 	"fmt"
-	"os"
 )
 
-var path = "/Users/Rachid/workspace/Go/src/github.com/RachidP/GoTraining/go_design_pattern/sort/heapSort/heapSort.txt"
-var heapSizeA int
+type Node struct {
+	Value int
+}
+
+func (n *Node) String() string {
+	return fmt.Sprint(n.Value)
+}
+
+// NewStack returns a new stack.
+func NewStack() *Stack {
+	return &Stack{}
+}
+
+// Stack is a basic LIFO stack that resizes as needed.
+type Stack struct {
+	nodes []*Node
+	count int
+}
+
+// Push adds a node to the stack.
+func (s *Stack) Push(n *Node) {
+	s.nodes = append(s.nodes[:s.count], n)
+	s.count++
+}
+
+// Pop removes and returns a node from the stack in last to first order.
+func (s *Stack) Pop() *Node {
+	if s.count == 0 {
+		return nil
+	}
+	s.count--
+	return s.nodes[s.count]
+}
+
+// NewQueue returns a new queue with the given initial size.
+func NewQueue(size int) *Queue {
+	return &Queue{
+		nodes: make([]*Node, size),
+		size:  size,
+	}
+}
+
+// Queue is a basic FIFO queue based on a circular list that resizes as needed.
+type Queue struct {
+	nodes []*Node
+	size  int
+	head  int
+	tail  int
+	count int
+}
+
+// Push adds a node to the queue.
+func (q *Queue) Push(n *Node) {
+	if q.head == q.tail && q.count > 0 {
+		nodes := make([]*Node, len(q.nodes)+q.size)
+		copy(nodes, q.nodes[q.head:])
+		copy(nodes[len(q.nodes)-q.head:], q.nodes[:q.head])
+		q.head = 0
+		q.tail = len(q.nodes)
+		q.nodes = nodes
+	}
+	q.nodes[q.tail] = n
+	q.tail = (q.tail + 1) % len(q.nodes)
+	q.count++
+}
+
+// Pop removes and returns a node from the queue in first to last order.
+func (q *Queue) Pop() *Node {
+	if q.count == 0 {
+		return nil
+	}
+	node := q.nodes[q.head]
+	q.head = (q.head + 1) % len(q.nodes)
+	q.count--
+	return node
+}
 
 func main() {
-	var top int
-	list := make([]int, 10)
-	fmt.Println(list)
-	push(list, &top, 5)
-	push(list, &top, 15)
-	push(list, &top, 25)
-	push(list, &top, 35)
-	push(list, &top, 15)
-	push(list, &top, 25)
-	push(list, &top, 35)
-	push(list, &top, 15)
-	push(list, &top, 25)
-	push(list, &top, 35)
-	fmt.Printf("top=%d\nlista= %v\n", top, list)
+	s := NewStack()
+	s.Push(&Node{3})
+	s.Push(&Node{5})
+	s.Push(&Node{7})
+	s.Push(&Node{9})
+	fmt.Println(s.Pop(), s.Pop(), s.Pop(), s.Pop())
 
-	if val, err := pop(list, &top); !isError(err) {
-		fmt.Println("l'elemento eliminato e' ", val)
-		fmt.Printf("top=%d\n lista= %v\n", top, list)
-	}
-
-	if val, err := pop(list, &top); !isError(err) {
-		fmt.Println("l'elemento eliminato e' ", val)
-		fmt.Printf("top=%d\n lista= %v\n", top, list)
-	}
-
-	if val, err := pop(list, &top); !isError(err) {
-		fmt.Println("l'elemento eliminato e' ", val)
-		fmt.Printf("top=%d\n lista= %v\n", top, list)
-	}
-
-	if val, err := pop(list, &top); !isError(err) {
-		fmt.Println("l'elemento eliminato e' ", val)
-		fmt.Printf("top=%d\n lista= %v\n", top, list)
-	}
-
-	if val, err := pop(list, &top); !isError(err) {
-		fmt.Println("l'elemento eliminato e' ", val)
-		fmt.Printf("top=%d\n lista= %v\n", top, list)
-	}
-
-}
-
-func isEmpty(list []int, top int) bool {
-	if top == 0 {
-		return true
-	}
-	return false
-
-}
-
-func push(list []int, top *int, x int) {
-	(*top)++
-	//list[*top] = x
-	list = append(list, x)
-
-}
-
-func pop(list []int, top *int) (int, error) {
-	if isEmpty(list, *top) {
-
-		fmt.Println("Stack underflow. the stack is empty.")
-		errObj := fmt.Errorf("Stack underflow. the stack is empty")
-		return -1, errObj
-	}
-	(*top)--
-	return list[(*top)+1], nil
-}
-
-/****************************************WRITING AND READING INTO FILE ********************************************/
-func createFile() {
-	// detect if file exists
-	var _, err = os.Stat(path)
-
-	// create file if not exists
-	if os.IsNotExist(err) {
-		var file, err = os.Create(path)
-		if isError(err) {
-			return
-		}
-		defer file.Close()
-	}
-
-	fmt.Println("==> done creating file", path)
-}
-
-func writeFile(list []int, desc string) {
-	//var path = "/Users/novalagung/Documents/temp/test.txt"
-
-	// open file using READ & WRITE permission 0644
-	//var file, err = os.OpenFile(path, os.O_RDWR, 0644)
-	var file, err = os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0600)
-
-	if isError(err) {
-		return
-	}
-	defer file.Close()
-	// write into file
-	_, err = file.WriteString(fmt.Sprintln(desc))
-	if isError(err) {
-		return
-	}
-
-	// write into file
-	_, err = file.WriteString(fmt.Sprintln(list))
-	if isError(err) {
-		return
-	}
-
-	// save changes
-	err = file.Sync()
-	if isError(err) {
-		return
-	}
-
-	fmt.Println("==> done writing to file")
-}
-
-func isError(err error) bool {
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-
-	return (err != nil)
+	q := NewQueue(1)
+	q.Push(&Node{2})
+	q.Push(&Node{4})
+	q.Push(&Node{6})
+	q.Push(&Node{8})
+	fmt.Println(q.Pop(), q.Pop(), q.Pop(), q.Pop())
 }
